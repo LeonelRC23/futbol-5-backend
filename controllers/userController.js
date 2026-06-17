@@ -1,16 +1,209 @@
 const db = require('../config/connection.js');
+const {
+  isValidEmail,
+  isValidPhoneNumber,
+} = require('../helpers/validators.js');
 
 const getUsers = async (req, res) => {
-    try{
-        const users = await db.query('SELECT * FROM USERS');
-        res.status(200).json(users);
-    }catch(error) {
-        console.log(error);
-        res.status(500).json({ message: "Error al obtener los usuarios" });
+  try {
+    const queryGet = `SELECT u.id, u.user_email, u.register_date, u.id_rental_status, d.user_name, d.user_dni, d.user_phone 
+        FROM users u JOIN user_details d ON u.id = d.id_user `;
+    const [users] = await db.query(queryGet);
+    res.status(200).json(users);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error al obtener los usuarios' });
+  }
+};
+
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = `
+      SELECT u.id, u.user_email, u.register_date, u.id_rental_status, 
+             d.user_name, d.user_dni, d.user_phone 
+      FROM users u
+      JOIN user_details d ON u.id = d.id_user
+      WHERE u.id = ?
+    `;
+    const [user] = await db.query(query, [id]);
+
+    if (user.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
     }
+    res.status(200).json(user[0]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error al obtener el usuario' });
+  }
+};
+
+const createUser = async (req, res) => {
+  try {
+    const {
+      user_email,
+      user_password,
+      user_name,
+      user_dni,
+      user_phone,
+      id_rental_status,
+    } = req.body;
+    const register_date = new Date();
+
+    if (!isValidEmail(user_email)) {
+      return res.status(400).json({ message: 'Email invalido.' });
+    }
+
+    if (!isValidPhoneNumber(user_phone)) {
+      return res.status(400).json({ message: 'Numero de telefono invalido.' });
+    }
+
+    const checkQuery =
+      'SELECT id FROM users WHERE user_email = ? OR user_dni = ? OR user_phone = ?';
+    const [existingUsers] = await db.query(checkQuery, [
+      user_email,
+      user_dni,
+      user_phone,
+    ]);
+
+    if (existingUsers.length > 0) {
+      return res
+        .status(409)
+        .json({ message: 'Datos ingresados ya existentes.' });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(user_password, saltRounds);
+
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const insertUserQuery = `
+                INSERT INTO users (user_email, user_password, register_date, id_rental_status) 
+                VALUES (?, ?, ?, ?)
+            `;
+      const [userResult] = await connection.query(insertUserQuery, [
+        user_email,
+        hashedPassword,
+        register_date,
+        id_rental_status,
+      ]);
+
+      const newUserId = userResult.insertId;
+
+      const insertDetailsQuery = `
+                INSERT INTO user_details (id_user, user_name, user_dni, user_phone) VALUES (?, ?, ?, ?)`;
+      await connection.query(insertDetailsQuery, [
+        newUserId,
+        user_name,
+        user_dni,
+        user_phone,
+      ]);
+
+      await connection.commit();
+      res.status(201).json({ message: 'Usuario creado y protegido con éxito' });
+    } catch (error) {
+      console.log(error);
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const {
+      id,
+      user_email,
+      user_password,
+      user_name,
+      user_dni,
+      user_phone,
+      id_rental_status,
+    } = req.body;
+
+    if (!isValidEmail(user_email)) {
+      return res.status(400).json({ message: 'Email invalido.' });
+    }
+
+    if (!isValidPhoneNumber(user_phone)) {
+      return res.status(400).json({ message: 'Numero de telefono invalido.' });
+    }
+
+    const checkQuery = `SELECT id FROM users WHERE user_email = ? OR user_dni = ? OR user_phone = ? AND id != ?`;
+    const [existingUsers] = await db.query(checkQuery, [
+      id,
+      user_email,
+      user_dni,
+      user_phone,
+      id_rental_status,
+    ]);
+
+    if (existingUsers.length > 0) {
+      return res
+        .status(409)
+        .json({ message: 'Datos ingresados ya existentes.' });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(user_password, saltRounds);
+
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      const updateUserQuery = `UPDATE users SET user_email = ?, user_password = ?, id_rental_status = ? WHERE id = ?`;
+      await connection.query(updateUserQuery, [
+        user_email,
+        hashedPassword,
+        id_rental_status,
+        id,
+      ]);
+
+      await connection.commit();
+      res.status(201).json({ message: 'Usuario actualizado correctamente.' });
+    } catch (error) {
+      console.log(error);
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Error al actualizar el usuario:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleteQuery = 'DELETE FROM users WHERE id = ?';
+    const [result] = await db.query(deleteQuery, [id]);
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ message: 'El usuario no existe o ya fue eliminado.' });
+    }
+
+    res.status(200).json({ message: 'Usuario eliminado correctamente.' });
+  } catch (error) {
+    console.log('Error al eliminar el usuario.', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
 };
 
 module.exports = {
-    getUsers
+  getUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
 };
-
