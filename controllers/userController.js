@@ -3,6 +3,7 @@ const {
   isValidEmail,
   isValidPhoneNumber,
 } = require('../helpers/validators.js');
+const bcrypt = require('bcryptjs');
 
 const getUsers = async (req, res) => {
   try {
@@ -58,9 +59,14 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: 'Numero de telefono invalido.' });
     }
 
+    const connection = await db.getConnection();
+
     const checkQuery =
-      'SELECT id FROM users WHERE user_email = ? OR user_dni = ? OR user_phone = ?';
-    const [existingUsers] = await db.query(checkQuery, [
+    `SELECT u.id 
+      FROM users u
+      LEFT JOIN user_details d ON u.id = d.id_user
+      WHERE u.user_email = ? OR d.user_dni = ? OR d.user_phone = ?`;
+    const [existingUsers] = await connection.query(checkQuery, [
       user_email,
       user_dni,
       user_phone,
@@ -75,7 +81,6 @@ const createUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(user_password, saltRounds);
 
-    const connection = await db.getConnection();
     await connection.beginTransaction();
 
     try {
