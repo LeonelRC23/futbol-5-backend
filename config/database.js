@@ -1,4 +1,6 @@
 const mysql2 = require('mysql2/promise');
+const pool = require('../config/connection.js');
+const axios = require('axios');
 
 async function verifyDb(db_name) {
   let connection;
@@ -146,6 +148,17 @@ async function verifyDb(db_name) {
     console.log(error);
   }
 }
+
+// async function insertData() {
+//   try{
+//     await pool.beginTransaction();
+
+//     const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES (?)`
+//     const rentalStatusesValues = 
+//   }catch(error) {
+//     console.log(error);
+//   }
+// }
 
 module.exports = {
   verifyDb,
