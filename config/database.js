@@ -1,10 +1,15 @@
 const mysql2 = require('mysql2/promise');
-const pool = require('./connection.js');
 
 async function verifyDb(db_name) {
-  try {
-    const connection = pool;
+  let connection;
 
+  try {
+    connection = await mysql2.createConnection({
+      host: process.env.host,
+      user: process.env.user_db,
+      password: process.env.password_db,
+    });
+    
     const [rows] = await connection.query('SHOW DATABASES LIKE ?', [db_name]);
 
     const exist = rows.length > 0;
