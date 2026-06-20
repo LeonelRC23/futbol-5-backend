@@ -61,8 +61,7 @@ const createUser = async (req, res) => {
 
     const connection = await db.getConnection();
 
-    const checkQuery =
-    `SELECT u.id 
+    const checkQuery = `SELECT u.id 
       FROM users u
       LEFT JOIN user_details d ON u.id = d.id_user
       WHERE u.user_email = ? OR d.user_dni = ? OR d.user_phone = ?`;
@@ -118,10 +117,13 @@ const createUser = async (req, res) => {
   } catch (error) {
     console.error('Error al crear usuario:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
+  } finally {
+    if (connection) connection.release();
   }
 };
 
 const updateUser = async (req, res) => {
+  let connection;
   try {
     const {
       id,
@@ -136,49 +138,62 @@ const updateUser = async (req, res) => {
     if (!isValidEmail(user_email)) {
       return res.status(400).json({ message: 'Email invalido.' });
     }
-
     if (!isValidPhoneNumber(user_phone)) {
       return res.status(400).json({ message: 'Numero de telefono invalido.' });
     }
 
-    const checkQuery = `SELECT id FROM users WHERE user_email = ? OR user_dni = ? OR user_phone = ? AND id != ?`;
+    const checkQuery = `
+      SELECT u.id FROM users u
+      LEFT JOIN user_details d ON u.id = d.id_user
+      WHERE (u.user_email = ? OR d.user_dni = ? OR d.user_phone = ?) AND u.id != ?
+    `;
     const [existingUsers] = await db.query(checkQuery, [
-      id,
       user_email,
       user_dni,
       user_phone,
-      id_rental_status,
+      id,
     ]);
 
     if (existingUsers.length > 0) {
-      return res
-        .status(409)
-        .json({ message: 'Datos ingresados ya existentes.' });
+      return res.status(409).json({
+        message: 'El email, DNI o Teléfono ya está en uso por otro usuario.',
+      });
     }
 
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(user_password, saltRounds);
-
-    const connection = await db.getConnection();
+    connection = await db.getConnection();
     await connection.beginTransaction();
 
     try {
-      const updateUserQuery = `UPDATE users SET user_email = ?, user_password = ?, id_rental_status = ? WHERE id = ?`;
-      await connection.query(updateUserQuery, [
-        user_email,
-        hashedPassword,
-        id_rental_status,
+      let updateUserQuery = `UPDATE users SET user_email = ?, id_rental_status = ?`;
+      let queryParams = [user_email, id_rental_status];
+
+      if (user_password && user_password.trim() !== '') {
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(user_password, saltRounds);
+        updateUserQuery += `, user_password = ?`;
+        queryParams.push(hashedPassword);
+      }
+
+      updateUserQuery += ` WHERE id = ?`;
+      queryParams.push(id);
+
+      await connection.query(updateUserQuery, queryParams);
+
+      const updateDetailsQuery = `UPDATE user_details SET user_name = ?, user_dni = ?, user_phone = ? WHERE id_user = ?`;
+      await connection.query(updateDetailsQuery, [
+        user_name,
+        user_dni,
+        user_phone,
         id,
       ]);
 
       await connection.commit();
-      res.status(201).json({ message: 'Usuario actualizado correctamente.' });
+      res.status(200).json({ message: 'Usuario actualizado correctamente.' });
     } catch (error) {
-      console.log(error);
       await connection.rollback();
       throw error;
     } finally {
-      connection.release();
+      if (connection) connection.release();
     }
   } catch (error) {
     console.error('Error al actualizar el usuario:', error);
