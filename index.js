@@ -3,7 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const { connection } = require('./config/database.js');
 const usersRoutes = require('./routes/userRoutes.js');
-const rentalStatusesRoutes = require('./routes/rentalStatuseRoutes.js')
+const rentalStatusesRoutes = require('./routes/rentalStatuseRoutes.js');
 const { verifyDb } = require('./config/database.js');
 
 const app = express();

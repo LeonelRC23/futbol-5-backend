@@ -1,6 +1,5 @@
 const mysql2 = require('mysql2/promise');
 const pool = require('../config/connection.js');
-const axios = require('axios');
 const bcrypt = require('bcryptjs');
 
 async function verifyDb(db_name) {
@@ -12,7 +11,7 @@ async function verifyDb(db_name) {
       user: process.env.user_db,
       password: process.env.password_db,
     });
-    
+
     const [rows] = await connection.query('SHOW DATABASES LIKE ?', [db_name]);
 
     const exist = rows.length > 0;
@@ -151,12 +150,12 @@ async function verifyDb(db_name) {
 }
 
 async function insertData() {
-  try{
-    console.log('Iniciando la insersion de los datos iniciales...')
+  try {
+    console.log('Iniciando la insersion de los datos iniciales...');
 
     await pool.beginTransaction();
 
-    const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES (?)`
+    const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES (?)`;
     const rentalStatusesValues = [['Habilitado'], ['Deshabilitado']];
     await pool.query(insertRentalStatuses, [rentalStatusesValues]);
 
@@ -169,9 +168,8 @@ async function insertData() {
     await pool.query(insertUser, [userValues]);
     await pool.query(insertUserDetails, [userDetailsValues]);
 
-      // continar...
-
-  }catch(error) {
+    // continar...
+  } catch (error) {
     console.log(error);
   }
 }
