@@ -73,7 +73,7 @@ async function verifyDb(db_name) {
                     id_facility INT NOT NULL,
                     id_field_status INT NOT NULL,
                     id_field_category INT NOT NULL,
-                    hourly_price DECIMAL(6, 2),
+                    hourly_price DECIMAL(8, 2),
                     CONSTRAINT fk_facility_field
                         FOREIGN KEY (id_facility)
                         REFERENCES facilities(id)
@@ -93,7 +93,7 @@ async function verifyDb(db_name) {
         `CREATE TABLE IF NOT EXISTS rental (
                     id_rental INT PRIMARY KEY AUTO_INCREMENT,
                     id_field INT NOT NULL,
-                    rental_price DECIMAL(6, 2) NOT NULL,
+                    rental_price DECIMAL(8, 2) NOT NULL,
                     id_user INT NOT NULL,
                     rental_date DATE NOT NULL,
                     rental_start TIME NOT NULL,
@@ -141,6 +141,8 @@ async function verifyDb(db_name) {
       for (const query of tables) {
         await connection.query(query);
       }
+
+      await insertData(connection);
     } else {
       console.log('La base de datos existe.');
     }
@@ -149,31 +151,67 @@ async function verifyDb(db_name) {
   }
 }
 
-async function insertData() {
+async function insertData(connection) {
   try {
     console.log('Iniciando la insersion de los datos iniciales...');
 
-    await pool.beginTransaction();
+    connection.beginTransaction();
 
-    const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES (?)`;
+    const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES ?`;
     const rentalStatusesValues = [['Habilitado'], ['Deshabilitado']];
-    await pool.query(insertRentalStatuses, [rentalStatusesValues]);
+    await connection.query(insertRentalStatuses, [rentalStatusesValues]);
+
+    const insertFieldStatuses = `INSERT INTO field_statuses (field_status_name) VALUES ?`;
+    const fieldStatusesValues = [
+      ['Disponible'],
+      ['En Mantenimiento'],
+      ['Ocupada'],
+    ];
+    await connection.query(insertFieldStatuses, [fieldStatusesValues]);
+
+    const insertFieldCategories = `INSERT INTO field_category (category_name, field_capacity) VALUES ?`;
+    const categoryValues = [
+      ['Fútbol 5', 10],
+      ['Fútbol 7', 14],
+      ['Fútbol 11', 22],
+    ];
+    await connection.query(insertFieldCategories, [categoryValues]);
+
+    const insertEmployeeStatuses = `INSERT INTO employee_statuses (employee_status_name) VALUES ?`;
+    const employeeStatusesValues = [
+      ['Activo'],
+      ['Inactivo'],
+      ['De Vacaciones'],
+    ];
+    await connection.query(insertEmployeeStatuses, [employeeStatusesValues]);
 
     const insertUser = `INSERT INTO users (user_email, user_password, register_date, id_rental_Status) VALUES (?, ?, ?, ?)`;
-    const userPassword = bcrypt.hash('admin', 10);
+    const userPassword = await bcrypt.hash('admin', 10);
     const registerDate = new Date();
     const userValues = ['admin@admin.com', userPassword, registerDate, 1];
+    const [userResult] = await connection.query(insertUser, userValues);
+    const newUserId = userResult.insertId;
     const insertUserDetails = `INSERT INTO user_details (id_user, user_name, user_dni, user_phone) VALUES (?, ?, ?, ?)`;
-    const userDetailsValues = [1, 'Admin', '00000000', '3811234567'];
-    await pool.query(insertUser, [userValues]);
-    await pool.query(insertUserDetails, [userDetailsValues]);
+    const userDetailsValues = [newUserId, 'Admin', '00000000', '3811234567'];
+    await connection.query(insertUserDetails, userDetailsValues);
 
-    // continar...
+    const insertFacility = `INSERT INTO facilities (address) VALUES (?)`;
+    const [facilityResult] = await connection.query(insertFacility, [
+      'Av. Principal 123',
+    ]);
+    const facilityId = facilityResult.insertId;
+
+    const insertField = `INSERT INTO fields (id_facility, id_field_status, id_field_category, hourly_price) VALUES (?, ?, ?, ?)`;
+    const fieldValues = [facilityId, 1, 1, 15000.0];
+    await connection.query(insertField, fieldValues);
+    await connection.commit();
   } catch (error) {
+    await connection.rollback();
     console.log(error);
   }
 }
 
 module.exports = {
   verifyDb,
+  insertData,
 };
