@@ -1,6 +1,7 @@
 const mysql2 = require('mysql2/promise');
 const pool = require('../config/connection.js');
 const axios = require('axios');
+const bcrypt = require('bcryptjs');
 
 async function verifyDb(db_name) {
   let connection;
@@ -149,16 +150,31 @@ async function verifyDb(db_name) {
   }
 }
 
-// async function insertData() {
-//   try{
-//     await pool.beginTransaction();
+async function insertData() {
+  try{
+    console.log('Iniciando la insersion de los datos iniciales...')
 
-//     const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES (?)`
-//     const rentalStatusesValues = 
-//   }catch(error) {
-//     console.log(error);
-//   }
-// }
+    await pool.beginTransaction();
+
+    const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES (?)`
+    const rentalStatusesValues = [['Habilitado'], ['Deshabilitado']];
+    await pool.query(insertRentalStatuses, [rentalStatusesValues]);
+
+    const insertUser = `INSERT INTO users (user_email, user_password, register_date, id_rental_Status) VALUES (?, ?, ?, ?)`;
+    const userPassword = bcrypt.hash('admin', 10);
+    const registerDate = new Date();
+    const userValues = ['admin@admin.com', userPassword, registerDate, 1];
+    const insertUserDetails = `INSERT INTO user_details (id_user, user_name, user_dni, user_phone) VALUES (?, ?, ?, ?)`;
+    const userDetailsValues = [1, 'Admin', '00000000', '3811234567'];
+    await pool.query(insertUser, [userValues]);
+    await pool.query(insertUserDetails, [userDetailsValues]);
+
+      // continar...
+
+  }catch(error) {
+    console.log(error);
+  }
+}
 
 module.exports = {
   verifyDb,
