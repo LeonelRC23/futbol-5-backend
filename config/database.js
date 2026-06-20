@@ -157,7 +157,7 @@ async function insertData(connection) {
 
     connection.beginTransaction();
 
-    const insertRentalStatuses = `INSERT INTO rental_Statuses (rental_status_name) VALUES ?`;
+    const insertRentalStatuses = `INSERT INTO rental_statuses (rental_status_name) VALUES ?`;
     const rentalStatusesValues = [['Habilitado'], ['Deshabilitado']];
     await connection.query(insertRentalStatuses, [rentalStatusesValues]);
 
