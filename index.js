@@ -5,6 +5,7 @@ require('dotenv').config();
 const { connection } = require('./config/database.js');
 const usersRoutes = require('./routes/userRoutes.js');
 const rentalStatusesRoutes = require('./routes/rentalStatuseRoutes.js');
+const employeeStatusRoutes = require('./routes/employeeStatusRoutes.js');
 const { verifyDb } = require('./config/database.js');
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(cookieParser());
 app.use(cors());
 app.use('/api/users', usersRoutes);
 app.use('/api/rentalStatus', rentalStatusesRoutes);
+app.use('/api/employeeStatus', employeeStatusRoutes);
 
 app.listen(PORT, () => {
   console.log('Escuchando en el puerto ' + PORT);
