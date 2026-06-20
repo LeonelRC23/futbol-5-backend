@@ -6,6 +6,7 @@ const { connection } = require('./config/database.js');
 const usersRoutes = require('./routes/userRoutes.js');
 const rentalStatusesRoutes = require('./routes/rentalStatuseRoutes.js');
 const { verifyDb } = require('./config/database.js');
+const FieldStatusesRoutes = require('./routes/fieldStatusesRoutes.js');
 
 const app = express();
 const PORT = 8000;
@@ -16,6 +17,7 @@ app.use(cookieParser());
 app.use(cors());
 app.use('/api/users', usersRoutes);
 app.use('/api/rentalStatus', rentalStatusesRoutes);
+app.use('/api/fieldStatus', FieldStatusesRoutes);
 
 app.listen(PORT, () => {
   console.log('Escuchando en el puerto ' + PORT);
