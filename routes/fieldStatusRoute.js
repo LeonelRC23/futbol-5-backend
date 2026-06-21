@@ -8,7 +8,7 @@ const {
     createFieldStatus,
     updateFieldStatus,
     deleteFieldStatus
-} = require('../controllers/fieldStatusController.js');
+} = require('../controllers/fieldStatusesController.js');
 
 router.get('/', verifyToken, getFieldStatuses);
 router.get('/:id', verifyToken, getFieldStatusById);
