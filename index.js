@@ -11,6 +11,7 @@ const facilityRoutes = require('./routes/facilityRoutes.js');
 const fieldStatusRoutes = require('./routes/fieldStatusRoute.js');
 const fieldCategoryRoutes = require('./routes/fieldCategoryRoutes.js');
 const fieldRoutes = require('./routes/fieldRoutes.js');
+const rentalRoutes = require('./routes/rentalRoutes.js');
 const { verifyDb } = require('./config/database.js');
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/facilities', facilityRoutes);
 app.use('./api/fieldStatuses', fieldStatusRoutes);
 app.use('/api/fieldCategories', fieldCategoryRoutes);
 app.use('/api/fields', fieldRoutes);
+app.use('/api/rental', rentalRoutes);
 
 app.listen(PORT, () => {
   console.log('Escuchando en el puerto ' + PORT);
