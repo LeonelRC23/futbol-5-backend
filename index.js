@@ -7,6 +7,7 @@ const usersRoutes = require('./routes/userRoutes.js');
 const rentalStatusesRoutes = require('./routes/rentalStatuseRoutes.js');
 const employeeStatusRoutes = require('./routes/employeeStatusRoutes.js');
 const employeeRoutes = require('./routes/employeeRoutes.js');
+const facilityRoutes = require('./routes/facilityRoutes.js')
 const { verifyDb } = require('./config/database.js');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/rentalStatus', rentalStatusesRoutes);
 app.use('/api/employeeStatus', employeeStatusRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/facilities', facilityRoutes);
 
 app.listen(PORT, () => {
   console.log('Escuchando en el puerto ' + PORT);
