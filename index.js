@@ -18,7 +18,9 @@ const app = express();
 const PORT = 8000;
 const nameDB = process.env.database_name;
 app.use(cors({
-  origin: 'http://127.0.0.1:5500',
+  origin: [
+    'http://127.0.0.1:5500',
+    'http://localhost:5500'], //usar ambos origins durante el desarrollo
   credentials: true
 }));
 app.use(express.json());
