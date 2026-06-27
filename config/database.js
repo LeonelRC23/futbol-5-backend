@@ -40,12 +40,17 @@ async function verifyDb(db_name) {
                     id INT PRIMARY KEY AUTO_INCREMENT,
                     employee_status_name VARCHAR(50) NOT NULL
                 )`,
+        `CREATE TABLE IF NOT EXISTS roles (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    role_name VARCHAR(50) NOT NULL UNIQUE
+                )`,
         `CREATE TABLE IF NOT EXISTS users (
                 id INT PRIMARY KEY AUTO_INCREMENT,
                 user_email VARCHAR(120) NOT NULL UNIQUE,
                 user_password VARCHAR(255) NOT NULL, -- Ampliamos a 255 porque el hash de bcrypt es largo
                 register_date DATE NOT NULL,
                 id_rental_status INT NOT NULL,
+                id_rol INT NOT NULL DEFAULT 2,
                 CONSTRAINT fk_rentalStatus_user
                     FOREIGN KEY (id_rental_status)
                     REFERENCES rental_statuses(id)
@@ -157,6 +162,10 @@ async function insertData(connection) {
 
     connection.beginTransaction();
 
+    const insertRoles = `INSERT INTO roles (role_name) VALUES ?`;
+    const rolesValues = [['admin'], ['user']];
+    await connection.query(insertRoles, [rolesValues]);
+
     const insertRentalStatuses = `INSERT INTO rental_statuses (rental_status_name) VALUES ?`;
     const rentalStatusesValues = [['Habilitado'], ['Deshabilitado']];
     await connection.query(insertRentalStatuses, [rentalStatusesValues]);
@@ -185,10 +194,10 @@ async function insertData(connection) {
     ];
     await connection.query(insertEmployeeStatuses, [employeeStatusesValues]);
 
-    const insertUser = `INSERT INTO users (user_email, user_password, register_date, id_rental_Status) VALUES (?, ?, ?, ?)`;
+    const insertUser = `INSERT INTO users (user_email, user_password, register_date, id_rental_Status, id_rol) VALUES (?, ?, ?, ?, ?)`;
     const userPassword = await bcrypt.hash('admin', 10);
     const registerDate = new Date();
-    const userValues = ['admin@admin.com', userPassword, registerDate, 1];
+    const userValues = ['admin@admin.com', userPassword, registerDate, 1, 1];
     const [userResult] = await connection.query(insertUser, userValues);
     const newUserId = userResult.insertId;
     const insertUserDetails = `INSERT INTO user_details (id_user, user_name, user_dni, user_phone) VALUES (?, ?, ?, ?)`;
