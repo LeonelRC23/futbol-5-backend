@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 
 const getUsers = async (req, res) => {
   try {
-    const queryGet = `SELECT u.id, u.user_email, u.register_date, u.id_rental_status, d.user_name, d.user_dni, d.user_phone 
+    const queryGet = `SELECT u.id, u.id_rol, u.user_email, u.register_date, u.id_rental_status, d.user_name, d.user_dni, d.user_phone 
         FROM users u JOIN user_details d ON u.id = d.id_user `;
     const [users] = await db.query(queryGet);
     res.status(200).json(users);
