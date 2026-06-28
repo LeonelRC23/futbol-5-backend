@@ -10,7 +10,7 @@ const loginUser = async (req, res) => {
   try {
     const { user_email, user_password } = req.body;
 
-    const query = `SELECT id, user_email, user_password FROM users WHERE user_email = ?`;
+    const query = `SELECT id, user_email, user_password, id_rol FROM users WHERE user_email = ?`;
     const [users] = await db.query(query, [user_email]);
 
     if (users.length === 0) {
@@ -28,6 +28,7 @@ const loginUser = async (req, res) => {
     const payload = {
       id: user.id,
       email: user.user_email,
+      role: user.id_rol,
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -88,19 +89,21 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(user_password, saltRounds);
     const registerDate = new Date();
     const idStatus = 1;
+    const idRole = 2;
 
     await connection.beginTransaction();
 
     try {
       const insertUserQuery = `
-        INSERT INTO users (user_email, user_password, register_date, id_rental_status) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO users (user_email, user_password, register_date, id_rental_status, id_rol) 
+        VALUES (?, ?, ?, ?, ?)
       `;
       const [userResult] = await connection.query(insertUserQuery, [
         user_email,
         hashedPassword,
         registerDate,
         idStatus,
+        idRole,
       ]);
       const newUserId = userResult.insertId;
 
@@ -132,4 +135,31 @@ const registerUser = async (req, res) => {
   }
 };
 
-module.exports = { loginUser, registerUser };
+const logout = (req, res) => {
+  try {
+    res.clearCookie('token_futbol5');
+    res.clearCookie('user_info');
+
+    res.status(200).json({ message: 'Sesión cerrada correctamente.' });
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    res.status(500).json({ message: 'Error interno al cerrar sesión.' });
+  }
+};
+
+const verifyAdmin = (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 1) {
+      return res.status(403).json({
+        message: 'Acceso denegado. Se requieren permisos de Administrador.',
+      });
+    }
+
+    return res.status(200).json({ isAdmin: true });
+  } catch (error) {
+    console.error('Error al verificar permisos de administrador:', error);
+    return res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+
+module.exports = { loginUser, registerUser, logout, verifyAdmin };

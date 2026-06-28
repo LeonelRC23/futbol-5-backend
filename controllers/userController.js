@@ -226,6 +226,24 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const checkAdminRole = (req, res) => {
+  try {
+    const userRole = req.user.role;
+
+    if (userRole === 1) {
+      return res.status(200).json({ isAdmin: true });
+    } else {
+      return res.status(403).json({
+        isAdmin: false,
+        message: 'Acceso denegado. Se requiere rol de Administrador.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al verificar rol:', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,

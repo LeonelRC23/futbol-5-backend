@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { loginUser, registerUser } = require('../controllers/authController.js');
+const {
+  loginUser,
+  registerUser,
+  logout,
+  verifyAdmin,
+} = require('../controllers/authController.js');
 const { verifyToken } = require('../middlewares/authMiddleware.js');
 const {
   getUsers,
@@ -12,7 +17,9 @@ const {
 
 router.post('/login', loginUser);
 router.post('/register', registerUser);
+router.post('/logout', logout);
 
+router.get('/verify-admin', verifyToken, verifyAdmin);
 router.get('/', verifyToken, getUsers);
 router.get('/:id', verifyToken, getUserById);
 router.post('/', verifyToken, createUser);

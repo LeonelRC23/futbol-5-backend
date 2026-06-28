@@ -1,8 +1,8 @@
 const pool = require('../config/connection.js');
 
 const getRentals = async (req, res) => {
-    try {
-        const query = `
+  try {
+    const query = `
             SELECT 
                 r.id_rental,
                 r.rental_price,
@@ -24,18 +24,18 @@ const getRentals = async (req, res) => {
             JOIN user_details ud ON u.id = ud.id_user
             ORDER BY r.rental_date DESC, r.rental_start DESC
         `;
-        const [rentals] = await pool.query(query);
-        res.status(200).json(rentals);
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Error al obtener las reservas." });
-    }
+    const [rentals] = await pool.query(query);
+    res.status(200).json(rentals);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error al obtener las reservas.' });
+  }
 };
 
 const getRentalById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const query = `
+  try {
+    const { id } = req.params;
+    const query = `
             SELECT 
                 r.id_rental,
                 r.rental_price,
@@ -57,116 +57,244 @@ const getRentalById = async (req, res) => {
             JOIN user_details ud ON u.id = ud.id_user
             WHERE r.id_rental = ?
         `;
-        const [rental] = await pool.query(query, [id]);
+    const [rental] = await pool.query(query, [id]);
 
-        if (rental.length === 0) {
-            return res.status(404).json({ message: "Reserva no encontrada." });
-        }
-        res.status(200).json(rental[0]);
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Error al obtener la reserva." });
+    if (rental.length === 0) {
+      return res.status(404).json({ message: 'Reserva no encontrada.' });
     }
+    res.status(200).json(rental[0]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error al obtener la reserva.' });
+  }
 };
 
 const createRental = async (req, res) => {
-    try {
-        const { id_field, rental_price, rental_date, rental_start, rental_end } = req.body;
+  try {
+    const { id_field, rental_price, rental_date, rental_start, rental_end } =
+      req.body;
 
-        const id_user = req.user.id;
+    const id_user = req.user.id;
 
-        if (!id_field || !rental_price || !id_user || !rental_date || !rental_start || !rental_end) {
-            return res.status(400).json({ message: "Todos los campos son obligatorios para crear la reserva." });
-        }
+    if (
+      !id_field ||
+      !rental_price ||
+      !id_user ||
+      !rental_date ||
+      !rental_start ||
+      !rental_end
+    ) {
+      return res.status(400).json({
+        message: 'Todos los campos son obligatorios para crear la reserva.',
+      });
+    }
 
-        const checkOverlapQuery = `
+    const checkOverlapQuery = `
             SELECT id_rental FROM rental 
             WHERE id_field = ? 
             AND rental_date = ? 
             AND (rental_start < ? AND rental_end > ?)
         `;
-        const [conflicts] = await pool.query(checkOverlapQuery, [id_field, rental_date, rental_end, rental_start]);
+    const [conflicts] = await pool.query(checkOverlapQuery, [
+      id_field,
+      rental_date,
+      rental_end,
+      rental_start,
+    ]);
 
-        if (conflicts.length > 0) {
-            return res.status(409).json({ message: "La cancha ya se encuentra reservada en ese horario." });
-        }
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        message: 'La cancha ya se encuentra reservada en ese horario.',
+      });
+    }
 
-        const insertQuery = `
+    const insertQuery = `
             INSERT INTO rental (id_field, rental_price, id_user, rental_date, rental_start, rental_end) 
             VALUES (?, ?, ?, ?, ?, ?)
         `;
-        await pool.query(insertQuery, [id_field, rental_price, id_user, rental_date, rental_start, rental_end]);
+    await pool.query(insertQuery, [
+      id_field,
+      rental_price,
+      id_user,
+      rental_date,
+      rental_start,
+      rental_end,
+    ]);
 
-        res.status(201).json({ message: "Reserva creada correctamente." });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Error interno del servidor al crear la reserva." });
+    res.status(201).json({ message: 'Reserva creada correctamente.' });
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json({ message: 'Error interno del servidor al crear la reserva.' });
+  }
+  console.log('REQ BODY REAL:', req.body);
+};
+
+const createRentalAdmin = async (req, res) => {
+  try {
+    const {
+      id_user,
+      id_field,
+      rental_price,
+      rental_date,
+      rental_start,
+      rental_end,
+    } = req.body;
+
+    if (
+      !id_field ||
+      !rental_price ||
+      !id_user ||
+      !rental_date ||
+      !rental_start ||
+      !rental_end
+    ) {
+      return res.status(400).json({
+        message: 'Todos los campos son obligatorios para crear la reserva.',
+      });
     }
-    console.log("REQ BODY REAL:", req.body);
+
+    const checkOverlapQuery = `
+            SELECT id_rental FROM rental 
+            WHERE id_field = ? 
+            AND rental_date = ? 
+            AND (rental_start < ? AND rental_end > ?)
+        `;
+    const [conflicts] = await pool.query(checkOverlapQuery, [
+      id_field,
+      rental_date,
+      rental_end,
+      rental_start,
+    ]);
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        message: 'La cancha ya se encuentra reservada en ese horario.',
+      });
+    }
+
+    const insertQuery = `
+            INSERT INTO rental (id_field, rental_price, id_user, rental_date, rental_start, rental_end) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        `;
+    await pool.query(insertQuery, [
+      id_field,
+      rental_price,
+      id_user,
+      rental_date,
+      rental_start,
+      rental_end,
+    ]);
+
+    res.status(201).json({ message: 'Reserva creada correctamente.' });
+  } catch (error) {
+    console.log(error);
+    res
+      .status(500)
+      .json({ message: 'Error interno del servidor al crear la reserva.' });
+  }
+  console.log('REQ BODY REAL:', req.body);
 };
 
 const updateRental = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { id_field, rental_price, id_user, rental_date, rental_start, rental_end } = req.body;
+  try {
+    const { id } = req.params;
+    const {
+      id_field,
+      rental_price,
+      id_user,
+      rental_date,
+      rental_start,
+      rental_end,
+    } = req.body;
 
-        if (!id_field || !rental_price || !id_user || !rental_date || !rental_start || !rental_end) {
-            return res.status(400).json({ message: "Todos los campos son obligatorios." });
-        }
+    if (
+      !id_field ||
+      !rental_price ||
+      !id_user ||
+      !rental_date ||
+      !rental_start ||
+      !rental_end
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'Todos los campos son obligatorios.' });
+    }
 
-        const checkOverlapQuery = `
+    const checkOverlapQuery = `
             SELECT id_rental FROM rental 
             WHERE id_field = ? 
             AND rental_date = ? 
             AND (rental_start < ? AND rental_end > ?)
             AND id_rental != ?
         `;
-        const [conflicts] = await pool.query(checkOverlapQuery, [id_field, rental_date, rental_end, rental_start, id]);
+    const [conflicts] = await pool.query(checkOverlapQuery, [
+      id_field,
+      rental_date,
+      rental_end,
+      rental_start,
+      id,
+    ]);
 
-        if (conflicts.length > 0) {
-            return res.status(409).json({ message: "El nuevo horario entra en conflicto con una reserva existente." });
-        }
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        message:
+          'El nuevo horario entra en conflicto con una reserva existente.',
+      });
+    }
 
-        const updateQuery = `
+    const updateQuery = `
             UPDATE rental 
             SET id_field = ?, rental_price = ?, id_user = ?, rental_date = ?, rental_start = ?, rental_end = ? 
             WHERE id_rental = ?
         `;
-        const [result] = await pool.query(updateQuery, [id_field, rental_price, id_user, rental_date, rental_start, rental_end, id]);
+    const [result] = await pool.query(updateQuery, [
+      id_field,
+      rental_price,
+      id_user,
+      rental_date,
+      rental_start,
+      rental_end,
+      id,
+    ]);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Reserva no encontrada." });
-        }
-
-        res.status(200).json({ message: "Reserva actualizada correctamente." });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Error interno del servidor." });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Reserva no encontrada.' });
     }
+
+    res.status(200).json({ message: 'Reserva actualizada correctamente.' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
 };
 
 const deleteRental = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        const deleteQuery = `DELETE FROM rental WHERE id_rental = ?`;
-        const [result] = await pool.query(deleteQuery, [id]);
+    const deleteQuery = `DELETE FROM rental WHERE id_rental = ?`;
+    const [result] = await pool.query(deleteQuery, [id]);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Reserva no encontrada o ya fue eliminada." });
-        }
-
-        res.status(200).json({ message: "Reserva eliminada correctamente." });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Error interno del servidor." });
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ message: 'Reserva no encontrada o ya fue eliminada.' });
     }
+
+    res.status(200).json({ message: 'Reserva eliminada correctamente.' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
 };
 
 module.exports = {
-    getRentals,
-    getRentalById,
-    createRental,
-    updateRental,
-    deleteRental,
+  getRentals,
+  getRentalById,
+  createRental,
+  createRentalAdmin,
+  updateRental,
+  deleteRental,
 };
