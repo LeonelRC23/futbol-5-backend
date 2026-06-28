@@ -22,7 +22,7 @@ const getUserById = async (req, res) => {
     const { id } = req.params;
     const query = `
       SELECT u.id, u.user_email, u.register_date, u.id_rental_status, 
-             d.user_name, d.user_dni, d.user_phone 
+             d.user_name, d.user_dni, d.user_phone, u.id_rol 
       FROM users u
       JOIN user_details d ON u.id = d.id_user
       WHERE u.id = ?
@@ -40,6 +40,8 @@ const getUserById = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
+  let connection;
+
   try {
     const {
       user_email,
@@ -47,19 +49,21 @@ const createUser = async (req, res) => {
       user_name,
       user_dni,
       user_phone,
-      id_rental_status,
+      id_rol,
     } = req.body;
+
     const register_date = new Date();
+    const id_rental_status = 1;
 
     if (!isValidEmail(user_email)) {
-      return res.status(400).json({ message: 'Email invalido.' });
+      return res.status(400).json({ message: 'Email inválido.' });
     }
 
     if (!isValidPhoneNumber(user_phone)) {
-      return res.status(400).json({ message: 'Numero de telefono invalido.' });
+      return res.status(400).json({ message: 'Número de teléfono inválido.' });
     }
 
-    const connection = await db.getConnection();
+    connection = await db.getConnection();
 
     const checkQuery = `SELECT u.id 
       FROM users u
@@ -84,20 +88,23 @@ const createUser = async (req, res) => {
 
     try {
       const insertUserQuery = `
-                INSERT INTO users (user_email, user_password, register_date, id_rental_status) 
-                VALUES (?, ?, ?, ?)
-            `;
+          INSERT INTO users (user_email, user_password, register_date, id_rental_status, id_rol) 
+          VALUES (?, ?, ?, ?, ?)
+      `;
       const [userResult] = await connection.query(insertUserQuery, [
         user_email,
         hashedPassword,
         register_date,
         id_rental_status,
+        id_rol || 2,
       ]);
 
       const newUserId = userResult.insertId;
 
       const insertDetailsQuery = `
-                INSERT INTO user_details (id_user, user_name, user_dni, user_phone) VALUES (?, ?, ?, ?)`;
+          INSERT INTO user_details (id_user, user_name, user_dni, user_phone) 
+          VALUES (?, ?, ?, ?)
+      `;
       await connection.query(insertDetailsQuery, [
         newUserId,
         user_name,
@@ -111,8 +118,6 @@ const createUser = async (req, res) => {
       console.log(error);
       await connection.rollback();
       throw error;
-    } finally {
-      connection.release();
     }
   } catch (error) {
     console.error('Error al crear usuario:', error);
@@ -133,6 +138,7 @@ const updateUser = async (req, res) => {
       user_dni,
       user_phone,
       id_rental_status,
+      id_rol,
     } = req.body;
 
     if (!isValidEmail(user_email)) {
@@ -164,8 +170,8 @@ const updateUser = async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      let updateUserQuery = `UPDATE users SET user_email = ?, id_rental_status = ?`;
-      let queryParams = [user_email, id_rental_status];
+      let updateUserQuery = `UPDATE users SET user_email = ?, id_rental_status = ?, id_rol = ?`;
+      let queryParams = [user_email, id_rental_status, id_rol];
 
       if (user_password && user_password.trim() !== '') {
         const saltRounds = 10;

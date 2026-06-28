@@ -35,7 +35,9 @@ const getEmployeeById = async (req, res) => {
                 ed.dni_employee, 
                 ed.phone_employee, 
                 es.employee_status_name, 
-                f.address AS facility_address
+                f.address AS facility_address,
+                e.id_facility,
+                ed.id_status_employee
             FROM employee e
             JOIN employee_details ed ON e.id_employee_details = ed.id
             JOIN employee_statuses es ON ed.id_status_employee = es.id

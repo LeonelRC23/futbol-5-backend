@@ -38,6 +38,7 @@ const loginUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.secure_cookie, //ponerlo en true cuando se suba a produccion.
       sameSite: 'lax',
+      // path: '/',
       maxAge: 2 * 60 * 60 * 1000,
     });
 
