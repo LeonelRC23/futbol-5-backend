@@ -71,7 +71,9 @@ const getRentalById = async (req, res) => {
 
 const createRental = async (req, res) => {
     try {
-        const { id_field, rental_price, id_user, rental_date, rental_start, rental_end } = req.body;
+        const { id_field, rental_price, rental_date, rental_start, rental_end } = req.body;
+
+        const id_user = req.user.id;
 
         if (!id_field || !rental_price || !id_user || !rental_date || !rental_start || !rental_end) {
             return res.status(400).json({ message: "Todos los campos son obligatorios para crear la reserva." });
@@ -93,13 +95,14 @@ const createRental = async (req, res) => {
             INSERT INTO rental (id_field, rental_price, id_user, rental_date, rental_start, rental_end) 
             VALUES (?, ?, ?, ?, ?, ?)
         `;
-        await db.query(insertQuery, [id_field, rental_price, id_user, rental_date, rental_start, rental_end]);
+        await pool.query(insertQuery, [id_field, rental_price, id_user, rental_date, rental_start, rental_end]);
 
         res.status(201).json({ message: "Reserva creada correctamente." });
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Error interno del servidor al crear la reserva." });
     }
+    console.log("REQ BODY REAL:", req.body);
 };
 
 const updateRental = async (req, res) => {
@@ -145,7 +148,7 @@ const updateRental = async (req, res) => {
 const deleteRental = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         const deleteQuery = `DELETE FROM rental WHERE id_rental = ?`;
         const [result] = await pool.query(deleteQuery, [id]);
 
