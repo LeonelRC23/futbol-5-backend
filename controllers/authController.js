@@ -162,4 +162,11 @@ const verifyAdmin = (req, res) => {
   }
 };
 
-module.exports = { loginUser, registerUser, logout, verifyAdmin };
+const verifyAuth = (req, res) => {
+  return res.status(200).json({
+    authenticated: true,
+    user: req.user
+  });
+};
+
+module.exports = { loginUser, registerUser, logout, verifyAdmin, verifyAuth };
