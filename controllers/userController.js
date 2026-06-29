@@ -244,10 +244,33 @@ const checkAdminRole = (req, res) => {
   }
 };
 
+const getRentalsByUserId = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const query = `
+            SELECT *
+            FROM rental
+            WHERE id_user = ?
+        `;
+    const [rentals] = await db.query(query, [userId]);
+
+    if (rentals.length === 0) {
+      return res.status(404).json({ message: 'Reserva no encontrada.' });
+    }
+    res.status(200).json(rentals[0]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error al obtener la reserva.' });
+  }
+};
+
+
+
 module.exports = {
   getUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  getRentalsByUserId
 };

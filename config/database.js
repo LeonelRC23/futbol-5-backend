@@ -211,8 +211,12 @@ async function insertData(connection) {
     const facilityId = facilityResult.insertId;
 
     const insertField = `INSERT INTO fields (id_facility, id_field_status, id_field_category, hourly_price) VALUES (?, ?, ?, ?)`;
-    const fieldValues = [facilityId, 1, 1, 15000.0];
-    await connection.query(insertField, fieldValues);
+    const fieldValues1 = [facilityId, 1, 1, 10000.0];
+    const fieldValues2 = [facilityId, 1, 2, 12000.0];
+    const fieldValues3 = [facilityId, 1, 3, 15000.0];
+    await connection.query(insertField, fieldValues1);
+    await connection.query(insertField, fieldValues2);
+    await connection.query(insertField, fieldValues3);
     await connection.commit();
   } catch (error) {
     await connection.rollback();

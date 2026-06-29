@@ -5,7 +5,7 @@ const {
   registerUser,
   logout,
   verifyAdmin,
-  verifyAuth
+  verifyAuth,
 } = require('../controllers/authController.js');
 const { verifyToken } = require('../middlewares/authMiddleware.js');
 const {
@@ -14,6 +14,7 @@ const {
   updateUser,
   createUser,
   deleteUser,
+  getRentalsByUserId
 } = require('../controllers/userController.js');
 
 router.post('/login', loginUser);
@@ -21,11 +22,13 @@ router.post('/register', registerUser);
 router.post('/logout', logout);
 router.get("/verify", verifyToken, verifyAuth);
 router.get('/verify-admin', verifyToken, verifyAdmin);
+router.get('/dashboard', verifyToken, getRentalsByUserId)
 router.get('/', verifyToken, getUsers);
 router.get('/:id', verifyToken, getUserById);
 router.post('/', verifyToken, createUser);
 router.put('/', verifyToken, updateUser);
 router.delete('/:id', verifyToken, deleteUser);
+
 
 
 module.exports = router;
