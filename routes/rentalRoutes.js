@@ -8,6 +8,7 @@ const {
   createRentalAdmin,
   updateRental,
   deleteRental,
+  getRentalsByUserId,
 } = require('../controllers/rentalController.js');
 
 router.get('/', verifyToken, getRentals);
@@ -16,5 +17,6 @@ router.post('/', verifyToken, createRental);
 router.post('/admin', verifyToken, createRentalAdmin);
 router.put('/:id', verifyToken, updateRental);
 router.delete('/:id', verifyToken, deleteRental);
+router.get('/rentals', verifyToken, getRentalsByUserId);
 
 module.exports = router;

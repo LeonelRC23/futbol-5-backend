@@ -331,4 +331,5 @@ module.exports = {
   createRentalAdmin,
   updateRental,
   deleteRental,
+  getRentalsByUserId,
 };
