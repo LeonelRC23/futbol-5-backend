@@ -308,12 +308,12 @@ const getRentalsByUserId = async (req, res) => {
         c.field_capacity
       FROM rental r
       INNER JOIN fields f ON r.id_field = f.id
-      INNER JOIN field_categories c ON f.id_field_category = c.id
+      INNER JOIN field_category c ON f.id_field_category = c.id
       WHERE r.id_user = ?
       ORDER BY r.rental_date DESC, r.rental_start DESC
     `;
 
-    const [rentals] = await db.query(query, [userId]);
+    const [rentals] = await pool.query(query, [userId]);
 
     return res.status(200).json(rentals);
   } catch (error) {

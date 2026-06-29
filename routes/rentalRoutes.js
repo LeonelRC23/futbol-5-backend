@@ -12,11 +12,11 @@ const {
 } = require('../controllers/rentalController.js');
 
 router.get('/', verifyToken, getRentals);
-router.get('/:id', verifyToken, getRentalById);
+router.get('/rentals', verifyToken, getRentalsByUserId);
 router.post('/', verifyToken, createRental);
 router.post('/admin', verifyToken, createRentalAdmin);
 router.put('/:id', verifyToken, updateRental);
+router.get('/:id', verifyToken, getRentalById);
 router.delete('/:id', verifyToken, deleteRental);
-router.get('/rentals', verifyToken, getRentalsByUserId);
 
 module.exports = router;
