@@ -290,6 +290,40 @@ const deleteRental = async (req, res) => {
   }
 };
 
+const getRentalsByUserId = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const query = `
+      SELECT 
+        r.id_rental, 
+        r.rental_price, 
+        r.rental_date, 
+        r.rental_start, 
+        r.rental_end,
+        f.id AS field_id,
+        f.id_facility,
+        f.hourly_price,
+        c.category_name,
+        c.field_capacity
+      FROM rental r
+      INNER JOIN fields f ON r.id_field = f.id
+      INNER JOIN field_categories c ON f.id_field_category = c.id
+      WHERE r.id_user = ?
+      ORDER BY r.rental_date DESC, r.rental_start DESC
+    `;
+
+    const [rentals] = await db.query(query, [userId]);
+
+    return res.status(200).json(rentals);
+  } catch (error) {
+    console.error('Error al obtener las reservas del usuario:', error);
+    return res
+      .status(500)
+      .json({ message: 'Error interno del servidor al obtener las reservas.' });
+  }
+};
+
 module.exports = {
   getRentals,
   getRentalById,
